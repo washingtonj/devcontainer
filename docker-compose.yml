@@ -1,0 +1,45 @@
+services:
+  devserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ORCA_APPIMAGE_URL: ${ORCA_APPIMAGE_URL:-}
+    image: devserver:latest
+    restart: unless-stopped
+
+    mem_limit: 3g
+    memswap_limit: 3g
+    cpus: 1
+
+    ports:
+      - "${SSH_HOST_BIND:-127.0.0.1}:${SSH_HOST_PORT:-2222}:22"
+    expose:
+      - "6768"
+
+    environment:
+      ORCA_PORT: "6768"
+      ORCA_PAIRING_ADDRESS: ${ORCA_PAIRING_ADDRESS:?Set ORCA_PAIRING_ADDRESS in .env}
+      ORCA_JSON: ${ORCA_JSON:-0}
+      ORCA_MOBILE_PAIRING: ${ORCA_MOBILE_PAIRING:-0}
+      ORCA_NO_SANDBOX: ${ORCA_NO_SANDBOX:-0}
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      HOME: /home/agent
+      XDG_CONFIG_HOME: /home/agent/.config
+      XDG_DATA_HOME: /home/agent/.local/share
+      XDG_CACHE_HOME: /home/agent/.cache
+
+    volumes:
+      - ${HOST_HOME:-./home}:/home/agent
+
+    security_opt:
+      - seccomp:unconfined
+
+    shm_size: "1gb"
+
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/6768'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s

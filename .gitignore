@@ -1,0 +1,4 @@
+.env
+home/
+.DS_Store
+*.log

@@ -1,0 +1,6 @@
+home/
+.env
+.env.*
+.git/
+.DS_Store
+*.log
