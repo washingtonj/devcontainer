@@ -16,9 +16,6 @@ curl -fsSL -o /tmp/asdf.tar.gz \
 tar -xzf /tmp/asdf.tar.gz -C /usr/local/bin asdf
 rm /tmp/asdf.tar.gz
 
-mkdir -p "$data_dir"
-chown -R agent:agent "$data_dir"
-
 cat > /etc/devserver/env.d/asdf.env <<'EOF'
 export ASDF_DATA_DIR=/home/agent/.asdf
 export PATH=/home/agent/.asdf/shims:/home/agent/.asdf/bin:$PATH
