@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM debian:13-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -8,43 +8,39 @@ ENV DEBIAN_FRONTEND=noninteractive \
 ARG TARGETARCH
 ARG ORCA_APPIMAGE_URL=""
 
-RUN userdel --remove ubuntu || true \
-    && groupdel ubuntu || true \
-    && useradd --uid 1000 --create-home --user-group --shell /bin/bash agent \
-    && mkdir -p /opt/orca /home/agent/workspace \
-    && ln -s /home/agent/workspace /workspace \
-    && chown -R agent:agent /home/agent/workspace
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    ca-certificates curl file jq git gawk xz-utils \
+    openssh-client openssh-server \
+    xvfb zlib1g-dev \
+    libgtk-3-0t64 libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 \
+    libgbm1 libasound2t64 libxtst6 libcups2t64 libdrm2 libxkbcommon0 \
+    libpango-1.0-0 libcairo2 libatspi2.0-0t64 libxcomposite1 libxdamage1 \
+    libxfixes3 libxrandr2 libxrender1 libx11-xcb1 libxcb-dri3-0 libxss1 \
+ && rm -rf /var/lib/apt/lists/*
 
-COPY --chmod=755 scripts/install-ssh.sh \
-     scripts/install-asdf-node.sh \
-     scripts/install-orca.sh \
-     /usr/local/lib/devserver/
+RUN useradd --uid 1000 --create-home --user-group --shell /bin/bash agent \
+ && sed -i 's|^agent:!:|agent::|' /etc/shadow \
+ && mkdir -p /opt/orca /home/agent/workspace /etc/devserver/env.d \
+ && ln -s /home/agent/workspace /workspace
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    chmod +x /usr/local/lib/devserver/*.sh \
-    && /usr/local/lib/devserver/install-ssh.sh
+COPY --chmod=755 \
+    scripts/install-asdf.sh \
+    scripts/install-orca.sh \
+    /usr/local/lib/devserver/
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    ASDF_DATA_DIR=/opt/devserver/agent-home/.asdf \
-    /usr/local/lib/devserver/install-asdf-node.sh \
-    && if [ -f /home/agent/.tool-versions ]; then \
-         cp -a /home/agent/.tool-versions /opt/devserver/agent-home/.tool-versions; \
-       fi
+RUN TARGETARCH="${TARGETARCH:-amd64}" /usr/local/lib/devserver/install-asdf.sh
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    TARGETARCH="${TARGETARCH:-amd64}" \
+RUN TARGETARCH="${TARGETARCH:-amd64}" \
     ORCA_APPIMAGE_URL="$ORCA_APPIMAGE_URL" \
     /usr/local/lib/devserver/install-orca.sh
 
-COPY --chmod=755 scripts/configure-ssh.sh \
-     scripts/entrypoint.sh \
-     scripts/prepare-agent-runtime.sh \
-     scripts/start-orca.sh \
-     /usr/local/lib/devserver/
-
-RUN chmod +x /usr/local/lib/devserver/*.sh \
-    && chmod 755 /usr/local/lib/devserver/entrypoint.sh \
-    && chown -R agent:agent /opt/devserver/agent-home
+COPY --chmod=755 \
+    scripts/configure-runtime.sh \
+    scripts/configure-ssh.sh \
+    scripts/start-orca.sh \
+    scripts/entrypoint.sh \
+    /usr/local/lib/devserver/
 
 WORKDIR /home/agent
 

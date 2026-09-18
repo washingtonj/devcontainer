@@ -1,11 +1,6 @@
 services:
-  devserver:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        ORCA_APPIMAGE_URL: ${ORCA_APPIMAGE_URL:-}
-    image: devserver:latest
+  orca:
+    image: ghcr.io/washingtonj/orca-devcontainer:latest
     restart: unless-stopped
 
     mem_limit: 3g
@@ -24,13 +19,9 @@ services:
       ORCA_MOBILE_PAIRING: ${ORCA_MOBILE_PAIRING:-0}
       ORCA_NO_SANDBOX: ${ORCA_NO_SANDBOX:-0}
       LIBGL_ALWAYS_SOFTWARE: "1"
-      HOME: /home/agent
-      XDG_CONFIG_HOME: /home/agent/.config
-      XDG_DATA_HOME: /home/agent/.local/share
-      XDG_CACHE_HOME: /home/agent/.cache
 
     volumes:
-      - ${HOST_HOME:-./home}:/home/agent
+      - orca-home:/home/agent
 
     security_opt:
       - seccomp:unconfined
@@ -43,3 +34,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+
+volumes:
+  orca-home:

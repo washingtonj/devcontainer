@@ -30,7 +30,7 @@ PermitRootLogin no
 AllowUsers agent
 X11Forwarding no
 PrintMotd no
-UsePAM yes
+UsePAM no
 EOF
 fi
 
