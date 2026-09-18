@@ -18,7 +18,12 @@ rm /tmp/asdf.tar.gz
 
 cat > /etc/devserver/env.d/asdf.env <<'EOF'
 export ASDF_DATA_DIR=/home/agent/.asdf
-export PATH=/home/agent/.asdf/shims:/home/agent/.asdf/bin:$PATH
+export NPM_CONFIG_PREFIX=/home/agent/.npm-global
+export PATH=/home/agent/.npm-global/bin:/home/agent/.local/bin:/home/agent/.asdf/shims:/home/agent/.asdf/bin:$PATH
+EOF
+
+cat > /etc/profile.d/asdf.sh <<'EOF'
+[ -f /etc/devserver/env.d/asdf.env ] && . /etc/devserver/env.d/asdf.env
 EOF
 
 asdf version

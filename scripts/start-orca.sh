@@ -30,7 +30,11 @@ echo "  pairing-address: ${PAIRING_ADDRESS}"
 echo "  user: agent (1000)"
 
 cd /home/agent
-exec runuser --preserve-environment -u agent -- env HOME=/home/agent \
+exec runuser --preserve-environment -u agent -- env \
+  ASDF_DATA_DIR=/home/agent/.asdf \
+  NPM_CONFIG_PREFIX=/home/agent/.npm-global \
+  PATH=/home/agent/.npm-global/bin:/home/agent/.local/bin:/home/agent/.asdf/shims:/home/agent/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  HOME=/home/agent \
   XDG_CONFIG_HOME=/home/agent/.config \
   XDG_DATA_HOME=/home/agent/.local/share \
   XDG_CACHE_HOME=/home/agent/.cache \

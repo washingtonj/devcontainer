@@ -32,7 +32,7 @@ ARG TARGETARCH
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-    ca-certificates git gawk xz-utils \
+    ca-certificates curl git gawk xz-utils \
     openssh-client openssh-server \
     xvfb zlib1g \
     libgtk-3-0t64 libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 \
@@ -51,6 +51,7 @@ RUN useradd --uid 1000 --create-home --user-group --shell /bin/bash agent \
 COPY --from=builder --chmod=755 /opt/orca/squashfs-root /opt/orca/squashfs-root
 COPY --from=builder /usr/local/bin/asdf /usr/local/bin/asdf
 COPY --from=builder /etc/devserver/env.d/asdf.env /etc/devserver/env.d/asdf.env
+COPY --from=builder /etc/profile.d/asdf.sh /etc/profile.d/asdf.sh
 
 COPY --chmod=755 \
     scripts/configure-runtime.sh \
