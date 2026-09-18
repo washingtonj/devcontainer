@@ -32,7 +32,7 @@ ARG TARGETARCH
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-    ca-certificates curl git gawk xz-utils unzip bzip2 \
+    ca-certificates curl git gawk xz-utils unzip bzip2 ripgrep \
     openssh-client openssh-server \
     xvfb zlib1g \
     libgtk-3-0t64 libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 \
