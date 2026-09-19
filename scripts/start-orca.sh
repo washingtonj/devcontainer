@@ -39,4 +39,4 @@ exec runuser --preserve-environment -u agent -- env \
   XDG_DATA_HOME=/home/agent/.local/share \
   XDG_CACHE_HOME=/home/agent/.cache \
   LIBGL_ALWAYS_SOFTWARE=1 \
-  /opt/orca/squashfs-root/AppRun "${EXTRA_ARGS[@]}" "${ARGS[@]}"
+  /opt/Orca/orca-ide "${EXTRA_ARGS[@]}" "${ARGS[@]}"

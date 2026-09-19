@@ -39,6 +39,9 @@ RUN apt-get update \
     libgbm1 libasound2t64 libxtst6 libcups2t64 libdrm2 libxkbcommon0 \
     libpango-1.0-0 libcairo2 libatspi2.0-0t64 libxcomposite1 libxdamage1 \
     libxfixes3 libxrandr2 libxrender1 libx11-xcb1 libxcb-dri3-0 libxss1 \
+    libnotify4 xdg-utils libsecret-1-0 \
+    python3 python3-gi gir1.2-atspi-2.0 \
+    xdotool xclip \
  && apt-mark manual libgbm1 libgl1-mesa-dri libglx-mesa0 \
  && dpkg --purge --force-depends libllvm19 mesa-libgallium libz3-4 2>/dev/null || true \
  && rm -rf /var/lib/apt/lists/*
@@ -48,7 +51,7 @@ RUN useradd --uid 1000 --create-home --user-group --shell /bin/bash agent \
  && mkdir -p /opt/orca /home/agent/workspace /etc/devserver/env.d \
  && ln -s /home/agent/workspace /workspace
 
-COPY --from=builder --chmod=755 /opt/orca/squashfs-root /opt/orca/squashfs-root
+COPY --from=builder --chmod=755 /opt/orca/opt/Orca /opt/Orca
 COPY --from=builder /usr/local/bin/asdf /usr/local/bin/asdf
 COPY --from=builder /etc/devserver/env.d/asdf.env /etc/devserver/env.d/asdf.env
 COPY --from=builder /etc/profile.d/asdf.sh /etc/profile.d/asdf.sh

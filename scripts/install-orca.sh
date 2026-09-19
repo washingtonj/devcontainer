@@ -3,27 +3,27 @@ set -eu
 
 orca_version="${ORCA_VERSION:-1.4.205}"
 
-url="${ORCA_APPIMAGE_URL:-}"
 case "${TARGETARCH:-amd64}" in
-  arm64) asset="orca-linux-arm64.AppImage" ;;
-  amd64) asset="orca-linux.AppImage" ;;
+  arm64) deb_arch="arm64" ;;
+  amd64) deb_arch="amd64" ;;
   *) echo "Unsupported Orca architecture: ${TARGETARCH:-}" >&2; exit 1 ;;
 esac
 
+url="${ORCA_APPIMAGE_URL:-}"
 if [[ -z "$url" ]]; then
-  url="https://github.com/stablyai/orca/releases/download/v${orca_version}/${asset}"
+  url="https://github.com/stablyai/orca/releases/download/v${orca_version}/orca-ide_${orca_version}_${deb_arch}.deb"
 fi
 
 echo "Downloading: $url"
-curl -fsSL -o /opt/orca/orca-linux.AppImage "$url"
-chmod +x /opt/orca/orca-linux.AppImage
-cd /opt/orca
-./orca-linux.AppImage --appimage-extract
-chmod -R a+rX /opt/orca/squashfs-root
-rm /opt/orca/orca-linux.AppImage
+curl -fsSL -o /tmp/orca-ide.deb "$url"
+dpkg-deb -x /tmp/orca-ide.deb /opt/orca/
+rm /tmp/orca-ide.deb
 
-find /opt/orca/squashfs-root/locales -name '*.pak' \
+orca_root="/opt/orca/opt/Orca"
+chmod -R a+rX "$orca_root"
+
+find "$orca_root/locales" -name '*.pak' \
   ! -name 'en-US.pak' ! -name 'en-GB.pak' -delete 2>/dev/null || true
-rm -f /opt/orca/squashfs-root/LICENSES.chromium.html
+rm -f "$orca_root/LICENSES.chromium.html"
 
-test -x /opt/orca/squashfs-root/AppRun
+test -x "$orca_root/orca-ide"
