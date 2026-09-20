@@ -40,7 +40,8 @@ jobs:
         with:
           push: true
           platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/washingtonj/orca-devcontainer:buildcache
+          cache-to: type=registry,ref=ghcr.io/washingtonj/orca-devcontainer:buildcache,mode=max
+          provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
