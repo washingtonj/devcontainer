@@ -35,5 +35,28 @@ services:
       retries: 10
       start_period: 60s
 
+  # Optional: peer-to-peer sync between this host and a local client, used to
+  # keep agent skills and related config in sync across machines. Start it only
+  # if you want that; `docker compose up -d orca` skips it. The profile keeps
+  # the default `docker compose up -d` from launching it implicitly.
+  syncthing:
+    image: syncthing/syncthing
+    restart: unless-stopped
+    network_mode: host
+    profiles: ["sync"]
+
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.5
+
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      STGUIADDRESS: "${SYNCTHING_GUI_ADDRESS:-0.0.0.0:8384}"
+      STHOMEDIR: "/home/agent/.config/syncthing"
+
+    volumes:
+      - orca-home:/home/agent
+
 volumes:
   orca-home:
