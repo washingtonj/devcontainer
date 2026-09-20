@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -eu
 
-apt-get update
-apt-get install -y --no-install-recommends openssh-client openssh-server
-rm -rf /var/lib/apt/lists/*
+mkdir -p /etc/devserver
+
+cat > /etc/devserver/sshd_config <<'EOF'
+Port 22
+ListenAddress 0.0.0.0
+ListenAddress ::
+HostKey /home/agent/.ssh/ssh_host_ed25519_key
+AuthorizedKeysFile /home/agent/.ssh/authorized_keys
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+AllowUsers agent
+X11Forwarding no
+PrintMotd no
+UsePAM no
+EOF

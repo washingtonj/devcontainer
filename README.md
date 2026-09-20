@@ -51,21 +51,32 @@ Mount a volume at `/home/agent`. The volume holds:
 
 - `.asdf/` — installed toolchains (asdf plugins and language versions)
 - `.config/orca/` — Orca runtime state, paired-device keys
-- `.ssh/authorized_keys` and host keys — SSH access for the `agent` user
+- `.ssh/` — SSH host key, generated client key, and `authorized_keys` for the `agent` user
 - `workspace/` — accessible at `/workspace` via symlink
 
 Without a volume, all of this is lost on container recreation.
 
 ## SSH
 
-Container exposes port 22. Host key generation happens on first boot inside the volume. Only public-key authentication is enabled; password auth, PAM, and root login are disabled.
+Container exposes port 22. Only public-key authentication is enabled; password auth, PAM, and root login are disabled.
+
+On first boot the container generates a **client keypair** and stores it in the volume. Pull the private key out and use it to connect:
 
 ```bash
-docker exec orca bash -c 'cat >> /home/agent/.ssh/authorized_keys' < ~/.ssh/id_ed25519.pub
-docker exec orca bash -c 'chmod 600 /home/agent/.ssh/authorized_keys && chown agent:agent /home/agent/.ssh/authorized_keys'
+docker cp orca:/home/agent/.ssh/id_ed25519_client ~/.ssh/orca_client_key
+chmod 600 ~/.ssh/orca_client_key
 
-ssh -p 2222 agent@<docker-host>
+ssh -p 2222 -i ~/.ssh/orca_client_key agent@<docker-host>
 ```
+
+To use your own key instead of the generated one, append its public half to `/home/agent/.ssh/authorized_keys`:
+
+```bash
+docker exec orca bash -c 'cat >> /home/agent/.ssh/authorized_keys' < ~/.ssh/your_key.pub
+docker exec orca bash -c 'chmod 600 /home/agent/.ssh/authorized_keys && chown agent:agent /home/agent/.ssh/authorized_keys'
+```
+
+The generated key remains authorized when you add your own, so you can keep both or remove it later.
 
 ## Toolchains (asdf)
 

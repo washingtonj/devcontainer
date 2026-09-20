@@ -44,10 +44,10 @@ RUN apt-get update \
     xdotool xclip \
  && apt-mark manual libgbm1 libgl1-mesa-dri libglx-mesa0 \
  && dpkg --purge --force-depends libllvm19 mesa-libgallium libz3-4 2>/dev/null || true \
+ && rm -f /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key \
  && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --uid 1000 --create-home --user-group --shell /bin/bash agent \
- && sed -i 's|^agent:!:|agent::|' /etc/shadow \
  && mkdir -p /opt/orca /home/agent/workspace /etc/devserver/env.d \
  && ln -s /home/agent/workspace /workspace
 
@@ -57,11 +57,14 @@ COPY --from=builder /etc/devserver/env.d/asdf.env /etc/devserver/env.d/asdf.env
 COPY --from=builder /etc/profile.d/asdf.sh /etc/profile.d/asdf.sh
 
 COPY --chmod=755 \
+    scripts/install-ssh.sh \
     scripts/configure-runtime.sh \
     scripts/configure-ssh.sh \
     scripts/start-orca.sh \
     scripts/entrypoint.sh \
     /usr/local/lib/devserver/
+
+RUN /usr/local/lib/devserver/install-ssh.sh
 
 WORKDIR /home/agent
 
