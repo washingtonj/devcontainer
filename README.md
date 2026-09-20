@@ -28,14 +28,15 @@ docker compose logs -f
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ORCA_PAIRING_ADDRESS` | (required) | Address the Orca client uses to reach this server — not a bind address; wildcards (`*`, `0.0.0.0`, `::`) are rejected |
+| `ORCA_PAIRING_ADDRESS` | value of `HOST_BIND` | Address the Orca client uses to reach this server — not a bind address; wildcards (`*`, `0.0.0.0`, `::`) are rejected, so set it explicitly when `HOST_BIND` is a wildcard |
 | `ORCA_PORT` | `6768` | Internal port for `orca serve` |
 | `ORCA_JSON` | `0` | Pass `--json` to `serve` |
 | `ORCA_MOBILE_PAIRING` | `0` | Enable `--mobile-pairing` |
 | `ORCA_NO_SANDBOX` | `0` | Enable only if Chromium reports sandbox errors |
-| `SSH_HOST_BIND` | `127.0.0.1` | Host interface the SSH port binds to (compose only) |
+| `HOST_BIND` | `127.0.0.1` | Host interface all published ports bind to — SSH and Syncthing (compose only) |
 | `SSH_HOST_PORT` | `2222` | Host port mapped to the container SSH port (compose only) |
-| `SYNCTHING_GUI_ADDRESS` | `0.0.0.0:8384` | Syncthing web UI bind on the host network. Set to `127.0.0.1:8384` to require an SSH tunnel (compose only) |
+| `SYNCTHING_USER` | (empty) | Syncthing GUI username; set together with the password to require auth (compose only) |
+| `SYNCTHING_PASSWORD` | (empty) | Syncthing GUI password, applied at container start (compose only) |
 
 `ORCA_PORT` is pinned to `6768` by `docker-compose.yml`; change it there or via `docker run -e`.
 
@@ -46,13 +47,10 @@ Build args (only relevant when building the image yourself):
 | `ORCA_VERSION` | `1.4.205` | Orca .deb package version to download |
 | `ORCA_APPIMAGE_URL` | (empty) | Override download URL (default pulls the release .deb; name kept from when the image used AppImage) |
 
-`ORCA_PAIRING_ADDRESS` examples:
+`ORCA_PAIRING_ADDRESS` defaults to `HOST_BIND`, so the address clients use matches where the ports are published. Set it explicitly when the client reaches the server through a different address:
 
 | Scenario | Value |
 |---|---|
-| Same machine | `127.0.0.1` |
-| LAN | `192.168.1.50` |
-| Tailscale | `100.64.1.20` |
 | Reverse proxy (authenticated, see [Network security](#network-security)) | `https://orca.example.com/runtime` |
 
 ## Network security
@@ -130,23 +128,24 @@ Any [asdf plugin](https://github.com/asdf-vm/asdf-plugins) works (`go`, `deno`, 
 
 ### syncthing
 
-Optional service that keeps a folder of your choice — e.g. the runtime's agent config under `/home/agent/.config`, or the workspace under `/home/agent/workspace` — in sync with your laptop:
+Keeps a folder of your choice — e.g. the runtime's agent config under `/home/agent/.config`, or the workspace under `/home/agent/workspace` — in sync with your laptop. It starts with the stack; `docker compose up -d orca` brings up Orca alone:
 
 ```bash
 docker compose up -d syncthing
 ```
 
-It binds to the host network on ports `22000/tcp+udp` (transfer) and `21027/udp` (discovery). The web UI is served at `http://<docker-host>:8384`:
+It publishes its transfer and discovery ports (`22000/tcp+udp`, `21027/udp`) and the web UI (`8384`) on `HOST_BIND`. The web UI is served at `http://<docker-host>:8384`:
 
 ```bash
 open http://<docker-host>:8384
 ```
 
-> **Authentication is required once exposed.** Syncthing ships with an unauthenticated GUI; any user on the network could reconfigure it. On first open, set a GUI user/password under *Actions → Settings → GUI*, or restrict the bind to `127.0.0.1:8384` and reach it over an SSH tunnel (see [Port forwarding](#port-forwarding)):
+> **Authentication is required once exposed.** Syncthing ships with an unauthenticated GUI; any user on the network could reconfigure it. Set the credentials in `.env` (applied at every container start) or restrict `HOST_BIND` to `127.0.0.1` and reach the GUI over an SSH tunnel (see [Port forwarding](#port-forwarding)):
 
 ```bash
 # .env
-SYNCTHING_GUI_ADDRESS=127.0.0.1:8384
+SYNCTHING_USER=admin
+SYNCTHING_PASSWORD=change-me
 ```
 
 Then add a folder in the GUI and pair with your other devices — syncthing is not pre-configured, and choose folder paths under `/home/agent` so synced data persists in the `orca-home` volume. Device pairing and folder config persist there too.

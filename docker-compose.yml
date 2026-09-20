@@ -8,13 +8,14 @@ services:
     cpus: 1
 
     ports:
-      - "${SSH_HOST_BIND:-127.0.0.1}:${SSH_HOST_PORT:-2222}:22"
+      - "${HOST_BIND:-127.0.0.1}:6768:6768"
+      - "${HOST_BIND:-127.0.0.1}:${SSH_HOST_PORT:-2222}:22"
     expose:
       - "6768"
 
     environment:
       ORCA_PORT: "6768"
-      ORCA_PAIRING_ADDRESS: ${ORCA_PAIRING_ADDRESS:?Set ORCA_PAIRING_ADDRESS in .env}
+      ORCA_PAIRING_ADDRESS: ${ORCA_PAIRING_ADDRESS:-${HOST_BIND:-127.0.0.1}}
       ORCA_JSON: ${ORCA_JSON:-0}
       ORCA_MOBILE_PAIRING: ${ORCA_MOBILE_PAIRING:-0}
       ORCA_NO_SANDBOX: ${ORCA_NO_SANDBOX:-0}
@@ -35,25 +36,43 @@ services:
       retries: 10
       start_period: 60s
 
-  # Optional: peer-to-peer sync between this host and a local client, used to
-  # keep agent skills and related config in sync across machines. Start it only
-  # if you want that; `docker compose up -d orca` skips it. The profile keeps
-  # the default `docker compose up -d` from launching it implicitly.
+  # Peer-to-peer sync between this host and a local client, used to keep
+  # agent skills and related config in sync across machines.
   syncthing:
     image: syncthing/syncthing
     restart: unless-stopped
-    network_mode: host
-    profiles: ["sync"]
 
     mem_limit: 512m
     memswap_limit: 512m
     cpus: 0.5
 
+    ports:
+      - "${HOST_BIND:-127.0.0.1}:8384:8384"
+      - "${HOST_BIND:-127.0.0.1}:22000:22000/tcp"
+      - "${HOST_BIND:-127.0.0.1}:22000:22000/udp"
+      - "${HOST_BIND:-127.0.0.1}:21027:21027/udp"
+
     environment:
       PUID: "1000"
       PGID: "1000"
-      STGUIADDRESS: "${SYNCTHING_GUI_ADDRESS:-0.0.0.0:8384}"
+      STGUIADDRESS: "0.0.0.0:8384"
       STHOMEDIR: "/home/agent/.config/syncthing"
+      SYNCTHING_USER: ${SYNCTHING_USER:-}
+      SYNCTHING_PASSWORD: ${SYNCTHING_PASSWORD:-}
+
+    # Syncthing has no env var for GUI credentials, so set them offline with
+    # `syncthing generate` before the stock entrypoint starts serving.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ -n "$$SYNCTHING_USER" ] && [ -n "$$SYNCTHING_PASSWORD" ]; then
+          printf '%s' "$$SYNCTHING_PASSWORD" | su-exec "$$PUID:$$PGID" /bin/syncthing generate \
+            --home="$$STHOMEDIR" \
+            --gui-user="$$SYNCTHING_USER" \
+            --gui-password=-
+        fi
+        exec /bin/entrypoint.sh /bin/syncthing
 
     volumes:
       - orca-home:/home/agent
