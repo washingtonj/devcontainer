@@ -47,7 +47,7 @@ RUN apt-get update \
  && rm -f /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key \
  && rm -rf /var/lib/apt/lists/*
 
-RUN useradd --uid 1000 --create-home --user-group --shell /bin/bash agent \
+RUN useradd --uid 1000 --create-home --user-group --shell /bin/bash -p '*' agent \
  && mkdir -p /opt/orca /home/agent/workspace /etc/devserver/env.d \
  && ln -s /home/agent/workspace /workspace
 
