@@ -2,11 +2,19 @@
 set -euo pipefail
 
 SSH_DIR=/home/agent/.ssh
+HOST_KEY=$SSH_DIR/ssh_host_ed25519_key
 CLIENT_KEY=$SSH_DIR/id_ed25519_client
 AUTHORIZED_KEYS=$SSH_DIR/authorized_keys
 SSHD_CONFIG=/etc/devserver/sshd_config
 
 mkdir -p /run/sshd "$SSH_DIR"
+
+if [[ ! -f "$HOST_KEY" ]]; then
+  ssh-keygen -q -t ed25519 -N '' -C 'orca-devcontainer host key' -f "$HOST_KEY"
+  chmod 600 "$HOST_KEY"
+  chmod 644 "$HOST_KEY.pub"
+  echo "[ssh] Generated host key at $HOST_KEY."
+fi
 
 if [[ ! -f "$CLIENT_KEY" ]]; then
   ssh-keygen -q -t ed25519 -N '' -C 'orca-devcontainer client key' -f "$CLIENT_KEY"
