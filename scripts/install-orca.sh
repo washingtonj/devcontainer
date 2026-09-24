@@ -9,10 +9,7 @@ case "${TARGETARCH:-amd64}" in
   *) echo "Unsupported Orca architecture: ${TARGETARCH:-}" >&2; exit 1 ;;
 esac
 
-url="${ORCA_APPIMAGE_URL:-}"
-if [[ -z "$url" ]]; then
-  url="https://github.com/stablyai/orca/releases/download/v${orca_version}/orca-ide_${orca_version}_${deb_arch}.deb"
-fi
+url="https://github.com/stablyai/orca/releases/download/v${orca_version}/orca-ide_${orca_version}_${deb_arch}.deb"
 
 echo "Downloading: $url"
 curl -fsSL -o /tmp/orca-ide.deb "$url"

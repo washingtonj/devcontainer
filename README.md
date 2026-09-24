@@ -45,13 +45,30 @@ Build args (only relevant when building the image yourself):
 | Build arg | Default | Purpose |
 |---|---|---|
 | `ORCA_VERSION` | `1.4.205` | Orca .deb package version to download |
-| `ORCA_APPIMAGE_URL` | (empty) | Override download URL (default pulls the release .deb; name kept from when the image used AppImage) |
 
 `ORCA_PAIRING_ADDRESS` defaults to `HOST_BIND`, so the address clients use matches where the ports are published. Set it explicitly when the client reaches the server through a different address:
 
 | Scenario | Value |
 |---|---|
-| Reverse proxy (authenticated, see [Network security](#network-security)) | `https://orca.example.com/runtime` |
+| LAN-only (see [Access from another network](#access-from-another-network)) | `orca.home` |
+| Overlay — VPN or mesh (see [below](#access-from-another-network)) | `orca.external.example` |
+
+## Access from another network
+
+Keep two pairing entries on the client — one per network — and dial the one that matches where you are:
+
+| Entry | `ORCA_PAIRING_ADDRESS` | Path |
+|---|---|---|
+| LAN | `orca.home` | Direct over the local network |
+| Overlay (VPN / mesh) | `orca.external.example` | Through the tunnel to the server's remote address |
+
+The **LAN entry** resolves only on the LAN: an `A` record `orca.home → 192.168.0.10` in the local DNS (router or local resolver). If the overlay client intercepts DNS, add the `home` suffix to its **Local Domain Fallback** pointing at that same resolver — fallback wins over remote DNS, so the name still resolves locally with the overlay on, keeping traffic on-link. A bare `192.168.0.10` needs no DNS at all.
+
+The **overlay entry** is any hostname only the overlay resolves to the server's overlay address (e.g. `100.64.0.10`, set through the overlay's own DNS or an override rule); keep the name outside the LAN DNS suffix so the two entries never collide.
+
+Mint one pairing link per entry: start the container with the LAN address, scan the URL on the laptop, then recreate with the overlay address and scan that one too. Both scans stay valid — paired-device keys persist in the volume — and the container can keep running with either address afterwards.
+
+For the LAN entry to work, the published ports must be reachable on the LAN: set `HOST_BIND=192.168.0.10`. That also exposes SSH (`2222`) and the Syncthing GUI on the LAN — set `SYNCTHING_USER`/`SYNCTHING_PASSWORD` first (see [syncthing](#syncthing)).
 
 ## Network security
 
@@ -60,7 +77,7 @@ Ports `6768` (`orca serve`) and `22` (sshd) are administrative — **do not expo
 > "Do not publish this port on the public internet; prefer Tailscale / WireGuard / trusted LAN."
 > — [Headless Linux Server](https://github.com/stablyai/orca/blob/main/docs/reference/headless-linux-server.md)
 
-Recommended: Tailscale, WireGuard, or bind to `127.0.0.1` / your LAN. A reverse proxy reachable from the internet **is** internet exposure — only proxy it with TLS and authentication (mTLS, SSO or VPN) in front. The proxy must support WebSocket upgrade and route the advertised path; advertise `wss://` (or `https://`) when TLS terminates at the proxy.
+Reach the server over a trusted LAN or a VPN / mesh (see [Access from another network](#access-from-another-network)).
 
 Orca runs as unprivileged user `agent` (uid 1000); sshd runs as root for privilege separation.
 
@@ -103,15 +120,15 @@ The generated key remains authorized when you add your own, so you can keep both
 
 ### Port forwarding
 
-Dev servers started by the runtime's agents bind to `127.0.0.1` inside the container, which is not reachable from the host. Forward a port over the SSH connection to open it on the laptop:
+Dev servers started by the runtime's agents bind to loopback inside the container, which is not reachable from the host. Forward a port over the SSH connection to open it on the laptop:
 
 ```bash
 ssh -N -p 2222 -i ~/.ssh/orca_client_key \
-  -L 3000:127.0.0.1:3000 -L 5173:127.0.0.1:5173 \
+  -L 3000:localhost:3000 -L 5173:localhost:5173 \
   agent@<host>
 ```
 
-Then `http://localhost:3000` (or any forwarded port) works on the laptop.
+Use `localhost`, not `127.0.0.1`, as the forward target: inside the container `localhost` resolves to the `::1` address dev servers (Vite, etc.) bind to, while `127.0.0.1` is IPv4-only and refused. Then `http://localhost:3000` (or any forwarded port) works on the laptop.
 
 ## Toolchains & tools
 
@@ -164,6 +181,7 @@ The volume is preserved. Orca migrates its on-disk state forward across upgrades
 | Symptom | What to try |
 |---|---|
 | No pairing URL in logs | Verify `ORCA_PAIRING_ADDRESS` is reachable from the client (not `0.0.0.0`) |
-| Client cannot connect | Check firewall / Tailscale policy / reverse proxy WebSocket upgrade |
+| Client cannot connect | Check firewall / overlay routing / pairing address reachability |
+| SSH forward logs `open failed: connect failed: Connection refused` | The target port has no listener, or the forward targets `127.0.0.1` while the dev server binds IPv6 — target `localhost` instead (see [Port forwarding](#port-forwarding)) |
 | Chromium / sandbox errors | Set `ORCA_NO_SANDBOX=1`, recreate |
-| Build fails downloading Orca | Check build network or pin `ORCA_APPIMAGE_URL` build arg |
+| Build fails downloading Orca | Check build network |

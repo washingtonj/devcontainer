@@ -3,7 +3,6 @@ FROM debian:13-slim AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 
 ARG TARGETARCH
-ARG ORCA_APPIMAGE_URL=""
 ARG ORCA_VERSION=1.4.205
 
 RUN apt-get update \
@@ -18,7 +17,6 @@ RUN TARGETARCH="${TARGETARCH:-amd64}" /usr/local/lib/devserver/install-asdf.sh
 
 RUN TARGETARCH="${TARGETARCH:-amd64}" \
     ORCA_VERSION="$ORCA_VERSION" \
-    ORCA_APPIMAGE_URL="$ORCA_APPIMAGE_URL" \
     /usr/local/lib/devserver/install-orca.sh
 
 FROM debian:13-slim
